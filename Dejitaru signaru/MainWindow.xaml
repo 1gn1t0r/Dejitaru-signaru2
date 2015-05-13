@@ -1,0 +1,63 @@
+﻿<Controls:MetroWindow x:Class="Dejitaru_signaru.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        Title="Dejitaru Signaru" Height="819" Width="1122.343">
+    <Grid>
+        <TabControl Margin="10,10,10,40">
+            <TabItem Header="Odio">
+                <Grid Background="#FFF">
+                    <Grid Background="Gray" Margin="10,37,10,0" Height="202" VerticalAlignment="Top">
+                        <oxy:PlotView x:Name="plot" Background="#FFF" />
+                    </Grid>
+                    <Button Content="Browse" HorizontalAlignment="Left" Margin="190,7,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_2"/>
+                    <Label x:Name="label_song" Content="Song" HorizontalAlignment="Left" Margin="10,7,0,0" VerticalAlignment="Top"/>
+                    <Slider x:Name="slider_songSeek" Margin="10,244,10,0" VerticalAlignment="Top" Thumb.DragCompleted="Slider_DragCompleted_1" />
+
+
+                    <TabControl Margin="10,267,10,169">
+                        <TabItem Header="Magnitude">
+                            <Grid Background="Gray">
+                                <oxy:PlotView x:Name="plotfftmag" Background="#FFF" >
+                                </oxy:PlotView>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="Phase">
+                            <Grid Background="Gray">
+                                <oxy:PlotView x:Name="plotfftphase" Background="#FFF" />
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
+                    <ListBox x:Name="listBoxStatus" Margin="10,0,0,10" Height="112" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="420"/>
+                    <Label Content="Song Similarity:" HorizontalAlignment="Left" Margin="10,0,0,127" VerticalAlignment="Bottom" RenderTransformOrigin="-1.421,0.231" FontSize="20"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Imeji">
+                <Grid Background="#FFF">
+                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="32,64,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Image x:Name="img_grayscale" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </Grid>
+                    <Grid Background="#FFE5E5E5" Margin="611,34,27,209">
+                        <Image x:Name="img_filtered" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </Grid>
+                    <Label Content="High pass threshold" HorizontalAlignment="Left" Margin="30,618,0,0" VerticalAlignment="Top"/>
+                    <Slider x:Name="slider_thresh" HorizontalAlignment="Left" Margin="150,626,0,0" VerticalAlignment="Top" Width="128" ValueChanged="Slider_ValueChanged" Minimum="25" LargeChange="0.5" TickFrequency="0.5" Maximum="90"/>
+                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="33,344,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Image x:Name="img_fourier_mag" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </Grid>
+                    <Label x:Name="img_label" Content="Label" HorizontalAlignment="Left" Margin="32,33,0,0" VerticalAlignment="Top"/>
+                    <Button Content="Browse" HorizontalAlignment="Left" Margin="213,33,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="317,344,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Image x:Name="img_fourier_phase" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </Grid>
+                    <Button Content="Update" HorizontalAlignment="Left" Margin="317,619,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+        <StatusBar Margin="10,0,10,5" Height="30" VerticalAlignment="Bottom">
+            <Label x:Name="status_label">Herro</Label>
+        </StatusBar>
+    </Grid>
+</Controls:MetroWindow>
