@@ -419,7 +419,7 @@ namespace Dejitaru_signaru
             int splits = (int)(time/60)/4; //splits of 4 minute intervals
             if (splits < 1)
                 splits = 1;
-            splits = 4;
+            splits = 3;
             int width = mono.Length / splits;
             List<Tuple<string, double, int>> songs = new List<Tuple<string, double, int>>();
             //System.Threading.Tasks.Parallel.For(0, audio_files.Length, j =>
@@ -427,8 +427,8 @@ namespace Dejitaru_signaru
             {
                 double[] signal2;
                 WaveFormat waveInfo;
-                ReadWaveFile(audio_files[j], out signal2, out waveInfo);
-                //ReadWaveFile(audio_files[j], out signal2, out waveInfo, SKIP);
+                //ReadWaveFile(audio_files[j], out signal2, out waveInfo);
+                ReadWaveFile(audio_files[j], out signal2, out waveInfo, SKIP);
 
                 double max_sim = 0;
                 int max_index = 0;
@@ -437,16 +437,16 @@ namespace Dejitaru_signaru
                 double norm = corr[0];
                 for (int i = 0; i < splits; i++)
                 {
-                    double[] signal1 = new double[width];
+                    double[] signal1 = new double[(int)Math.Ceiling((float)width/SKIP)];
 
-                    for (int k = 0; k < width; k++)
+                    for (int k = 0; k < width; k+=SKIP)
                     {
-                        signal1[k] = mono[i * width + k];
+                        signal1[k/SKIP] = mono[i * width + k];
                     }
 
                     //double[] corr;
                    
-                    alglib.corrr1dcircular(signal1, signal1.Length/2, signal2, signal2.Length / SKIP, out corr);
+                    alglib.corrr1dcircular(signal1, signal1.Length, signal2, signal2.Length, out corr);
                     
                     //alglib.corrr1d(signal1, width / SKIP, signal2, signal2.Length / SKIP, out corr);
                     for (int k = 0; k < corr.Length; k++)
@@ -454,7 +454,7 @@ namespace Dejitaru_signaru
                         if (Math.Abs(corr[k]) > max_sim)
                         {
                             max_sim = Math.Abs(corr[k]);
-                            max_index = k + i * width;
+                            max_index = k*SKIP + i * width;
                         }
                     }
 
@@ -545,19 +545,20 @@ namespace Dejitaru_signaru
             {
                 int size = width * height;
 
-                alglib.complex[] input = new alglib.complex[mono.Length / SKIP +1];
+                int skip = 10 * SKIP;
+                alglib.complex[] input = new alglib.complex[mono.Length / skip + 1];
 
-                for (int i = 0; i < mono.Length; i += SKIP)
+                for (int i = 0; i < mono.Length; i += skip)
                 {
-                    input[i / SKIP] = new alglib.complex(mono[i], 0);
+                    input[i / skip] = new alglib.complex(mono[i], 0);
                 }
 
                 alglib.fftc1d(ref input);
 
-                int skip = (int)((mono.Length / 15114240.0f) * 100);
+                skip = (int)((mono.Length / 15114240.0f) * 50)/skip;
                 if (skip < 100)
                     skip = 100;
-                for (int i = 0; i < mono.Length / 32; i += skip)
+                for (int i = 0; i < input.Length / 4; i += skip)
                 {
                     double mag = Math.Sqrt(input[i].x * input[i].x + input[i].y * input[i].y);
                     double phase = Math.Atan2(input[i].y, input[i].x);
@@ -615,7 +616,7 @@ namespace Dejitaru_signaru
             reader.Close();
         }
 
-        void ReadWaveFile(string file_name, out double[] arr, out WaveFormat waveInfo)
+        void ReadWaveFile(string file_name, out double[] arr, out WaveFormat waveInfo, int courseness)
         {
             NAudio.Wave.WaveFileReader reader = new NAudio.Wave.WaveFileReader(file_name);
 
@@ -638,10 +639,10 @@ namespace Dejitaru_signaru
                 if (left[i] > max)
                     max = left[i];
             }
-            arr = new double[left.Length];
-            for (int i = 0; i < left.Length; i+= 1)
+            arr = new double[(int) Math.Ceiling((float)left.Length/courseness)];
+            for (int i = 0; i < left.Length; i+= courseness)
             {
-                arr[i] = left[i] / max;
+                arr[i/courseness] = left[i] / max;
             }
             reader.Close();
             waveInfo = reader.WaveFormat;
