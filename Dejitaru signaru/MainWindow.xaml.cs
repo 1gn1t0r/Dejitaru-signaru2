@@ -419,6 +419,7 @@ namespace Dejitaru_signaru
             int splits = (int)(time/60)/4; //splits of 4 minute intervals
             if (splits < 1)
                 splits = 1;
+            splits = 4;
             int width = mono.Length / splits;
             List<Tuple<string, double, int>> songs = new List<Tuple<string, double, int>>();
             //System.Threading.Tasks.Parallel.For(0, audio_files.Length, j =>
@@ -427,6 +428,7 @@ namespace Dejitaru_signaru
                 double[] signal2;
                 WaveFormat waveInfo;
                 ReadWaveFile(audio_files[j], out signal2, out waveInfo);
+                //ReadWaveFile(audio_files[j], out signal2, out waveInfo, SKIP);
 
                 double max_sim = 0;
                 int max_index = 0;
@@ -444,7 +446,7 @@ namespace Dejitaru_signaru
 
                     //double[] corr;
                    
-                    alglib.corrr1dcircular(signal1, width / SKIP, signal2, signal2.Length / SKIP, out corr);
+                    alglib.corrr1dcircular(signal1, signal1.Length/2, signal2, signal2.Length / SKIP, out corr);
                     
                     //alglib.corrr1d(signal1, width / SKIP, signal2, signal2.Length / SKIP, out corr);
                     for (int k = 0; k < corr.Length; k++)
@@ -479,7 +481,7 @@ namespace Dejitaru_signaru
                 while (FFTPointsMag.Count < 10)
                     Thread.Sleep(100);
                 status_label.Dispatcher.Invoke(() => { status_label.Content = "Checking similarities"; });
-                var songs = check_similarity(new string[] { "D:\\burn.wav", "D:\\pokemon.wav", "D:\\sukima.wav", "D:\\races.wav" });
+                var songs = check_similarity(new string[] { "D:\\sein\\burn.wav", "D:\\sein\\pokemon.wav", "D:\\sein\\nexttome.wav", "D:\\sein\\talkingbody.wav" });
                 double max_size = 0;
                 for (int i = 0; i < songs.Count;i++ )
                 {
@@ -637,7 +639,7 @@ namespace Dejitaru_signaru
                     max = left[i];
             }
             arr = new double[left.Length];
-            for (int i = 0; i < left.Length; i++)
+            for (int i = 0; i < left.Length; i+= 1)
             {
                 arr[i] = left[i] / max;
             }
