@@ -46,12 +46,11 @@
                     <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="33,344,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
                         <Image x:Name="img_fourier_mag" HorizontalAlignment="Left" VerticalAlignment="Top" />
                     </Grid>
-                    <Label x:Name="img_label" Content="Label" HorizontalAlignment="Left" Margin="32,33,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="img_label" Content="Image" HorizontalAlignment="Left" Margin="32,33,0,0" VerticalAlignment="Top"/>
                     <Button Content="Browse" HorizontalAlignment="Left" Margin="213,33,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
                     <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="317,344,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
                         <Image x:Name="img_fourier_phase" HorizontalAlignment="Left" VerticalAlignment="Top" />
                     </Grid>
-                    <Button Content="Update" HorizontalAlignment="Left" Margin="317,619,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
                 </Grid>
             </TabItem>
 

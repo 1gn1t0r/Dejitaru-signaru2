@@ -172,13 +172,33 @@ namespace Dejitaru_signaru
             image = new WriteableBitmap(color_img);
             width = (int)color_img.PixelWidth;
             height = (int)color_img.PixelHeight;
-            for (int x = 0; x < width; x++)
+            unsafe
             {
-                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                    var pixel = image.GetPixel(x, y);
+                    for (int y = 0; y < height; y++)
+                    {
+                        //var pixel = image.GetPixel(x, y);
 
-                    image.SetPixel(x, y, ConvertToGrayScale(pixel));
+                        Color c = new Color();
+                        IntPtr pBackBuffer = image.BackBuffer;
+
+
+                        byte* pBuff = (byte*)pBackBuffer.ToPointer();
+
+                        //BGRA
+                        c.B = pBuff[4 * x + (y * image.BackBufferStride)];
+                        c.G = pBuff[4 * x + (y * image.BackBufferStride) + 1];
+                        c.R = pBuff[4 * x + (y * image.BackBufferStride) + 2];
+                        c.A = pBuff[4 * x + (y * image.BackBufferStride) + 3];
+
+                        Color gray_comp = ConvertToGrayScale(c);
+
+                        pBuff[4 * x + (y * image.BackBufferStride)] = c.B;
+                        pBuff[4 * x + (y * image.BackBufferStride) + 1] = c.G;
+                        pBuff[4 * x + (y * image.BackBufferStride) + 2] = c.R;
+                        pBuff[4 * x + (y * image.BackBufferStride) + 3] = c.A;
+                    }
 
                 }
             }
@@ -203,6 +223,7 @@ namespace Dejitaru_signaru
         Color GetBGRAPixel(WriteableBitmap bitmap, int x, int y)
         {
             Color c = new Color();
+            
             IntPtr pBackBuffer = bitmap.BackBuffer;
 
             unsafe
@@ -221,7 +242,7 @@ namespace Dejitaru_signaru
         private void CalculateImgFFT(float perc)
         {
 
-            int size = width*height;
+            int size = width * height;
 
             alglib.complex[] input = new alglib.complex[size];
 
@@ -229,20 +250,21 @@ namespace Dejitaru_signaru
             {
                 for (int y = 0; y < height; y++)
                 {
-                    input[x * height + y] = new alglib.complex(grayscale.GetPixel(x, y).R,0);
+                    
+                    input[x * height + y] = new alglib.complex(GetBGRAPixel(grayscale, x, y).R, 0);
                 }
             }
 
             alglib.fftc1d(ref input);
 
 
-            double max_mag=0;
-            double max_phase=0;
-             for (int x = 0; x < width; x++)
+            double max_mag = 0;
+            double max_phase = 0;
+            for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                     int i = x * height + y;
+                    int i = x * height + y;
                     double mag = Math.Sqrt(input[i].x * input[i].x + input[i].y * input[i].y);
                     double phase = Math.Abs(Math.Atan2(input[i].y, input[i].x));
                     if (mag > max_mag)
@@ -250,7 +272,7 @@ namespace Dejitaru_signaru
                     if (phase > max_phase)
                         max_phase = phase;
                 }
-             }
+            }
 
             double c_mag = 255 / Math.Log10(1 + max_mag);
             double c_phase = 255 / Math.Log10(1 + max_phase);
@@ -261,28 +283,28 @@ namespace Dejitaru_signaru
             WriteableBitmap fourier_phase = new WriteableBitmap(width + 1, height + 1, grayscale.DpiX, grayscale.DpiY, PixelFormats.Bgra32, BitmapPalettes.Halftone256Transparent);
             fourier_mag.Clear();
             fourier_phase.Clear();
-            for (int x = 0; x < width; x++)
+            unsafe
             {
-                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                     int i = x * height + y;
-                    float r = perc * ((width > height) ? width : height);
-                    if((x-width/2)*(x-width/2) + (y-height/2)*(y-height/2) > r*r)
+                    for (int y = 0; y < height; y++)
                     {
-                        input[i].x = 0;
-                        input[i].y = 0;
-                    }
+                        int i = x * height + y;
+                        float r = perc * ((width > height) ? width : height);
+                        if ((x - width / 2) * (x - width / 2) + (y - height / 2) * (y - height / 2) > r * r)
+                        {
+                            input[i].x = 0;
+                            input[i].y = 0;
+                        }
 
 
-                   
-                    double mag = Math.Sqrt(input[i].x * input[i].x + input[i].y * input[i].y);
-                    double phase = Math.Atan2(input[i].y, input[i].x);
+                        double mag = Math.Sqrt(input[i].x * input[i].x + input[i].y * input[i].y);
+                        double phase = Math.Atan2(input[i].y, input[i].x);
 
-                    byte dyn_pix_mag = (byte)(c_mag * Math.Log10(1+mag));
-                    byte dyn_pix_phase = (byte)(c_phase * Math.Log10(1+phase));
+                        byte dyn_pix_mag = (byte)(c_mag * Math.Log10(1 + mag));
+                        byte dyn_pix_phase = (byte)(c_phase * Math.Log10(1 + phase));
 
-                    unsafe
-                    {
+
                         IntPtr pBackBuffer = fourier_mag.BackBuffer;
 
                         byte* pBuff = (byte*)pBackBuffer.ToPointer();
@@ -292,12 +314,10 @@ namespace Dejitaru_signaru
                         pBuff[4 * x + (y * fourier_mag.BackBufferStride) + 1] = dyn_pix_mag;
                         pBuff[4 * x + (y * fourier_mag.BackBufferStride) + 2] = dyn_pix_mag;
                         pBuff[4 * x + (y * fourier_mag.BackBufferStride) + 3] = 255;
-                    }
-                    unsafe
-                    {
-                        IntPtr pBackBuffer = fourier_phase.BackBuffer;
 
-                        byte* pBuff = (byte*)pBackBuffer.ToPointer();
+                        pBackBuffer = fourier_phase.BackBuffer;
+
+                        pBuff = (byte*)pBackBuffer.ToPointer();
 
                         //BGRA
                         pBuff[4 * x + (y * fourier_phase.BackBufferStride)] = dyn_pix_phase;
@@ -309,9 +329,6 @@ namespace Dejitaru_signaru
 
                 }
             }
-            img_fourier_mag.Source = fourier_mag;
-            img_fourier_phase.Source = fourier_phase;
-
 
 
             alglib.fftc1dinv(ref input);
@@ -345,7 +362,18 @@ namespace Dejitaru_signaru
                 }
             }
 
-            img_filtered.Source = filtered;
+            img_filtered.Dispatcher.Invoke(() =>
+               {
+                    img_filtered.Source = filtered;
+                });
+            img_fourier_mag.Dispatcher.Invoke(() =>
+              {
+                  img_fourier_mag.Source = fourier_mag;
+              });
+            img_fourier_phase.Dispatcher.Invoke(() =>
+              {
+                  img_fourier_phase.Source = fourier_phase;
+              });
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -360,26 +388,45 @@ namespace Dejitaru_signaru
            
             if (op.ShowDialog() == true)
             {
+                if (op.FileName == null || op.FileName == "")
+                    return;
                 status_label.Content = "Loading file";
                 grayscale = LoadGrayScaleBitmap(op.FileName);
                 img_grayscale.Source = grayscale;
                 img_label.Content = System.IO.Path.GetFileName(op.FileName);
-            }
-            status_label.Content = "Done";
 
-            Button_Click_1(null, null);
+                Slider_ValueChanged(null, null);
+                status_label.Content = "Done";
+
+                
+            }
+           
         }
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            
+            try
+            {
+                float slider_val = (float)slider_thresh.Value / 100.0f;
+                status_label.Content = "Calculating FFT";
+                CalculateImgFFT((float)slider_thresh.Value / 100);
+                status_label.Content = "Done";
+            }
+            catch
+            {
+
+            }
         }
 
+        
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            status_label.Content = "Calculating FFT";
-            CalculateImgFFT((float)slider_thresh.Value/100);
-            status_label.Content = "Done";
+            
+            
+           // (new Thread(() => CalculateImgFFT(slider_val))).Start();
+
+            //CalculateImgFFT((float)slider_thresh.Value/100);
+        
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
@@ -391,6 +438,8 @@ namespace Dejitaru_signaru
 
             if (op.ShowDialog() == true)
             {
+                if (op.FileName == null || op.FileName == "")
+                    return;
                 FFTPointsMag.Clear();
                 FFTPointsPhase.Clear();
                 SongPoints.Clear();
@@ -401,16 +450,19 @@ namespace Dejitaru_signaru
                 player.Open(new Uri(op.FileName));
                 player.Play();
 
-                label_song.Content = "Playing " + System.IO.Path.GetFileNameWithoutExtension(op.FileName);
+                label_song.Content = "Playing " + System.IO.Path.GetFileName(op.FileName);
+                
                 songNotify.Start();
 
                 ReadWaveFile(op.FileName);
-            }
-            status_label.Content = "Done";
 
-            plotFFT();
-            
-            ShowSimilarities();
+                status_label.Content = "Done";
+
+                plotFFT();
+
+                ShowSimilarities();
+            }
+           
         }
 
         List<Tuple<string, double, int>> check_similarity(string[] audio_files)
@@ -545,7 +597,7 @@ namespace Dejitaru_signaru
             {
                 int size = width * height;
 
-                int skip = 10 * SKIP;
+                int skip = 10 * SKIP/2;
                 alglib.complex[] input = new alglib.complex[mono.Length / skip + 1];
 
                 for (int i = 0; i < mono.Length; i += skip)
@@ -555,16 +607,16 @@ namespace Dejitaru_signaru
 
                 alglib.fftc1d(ref input);
 
-                skip = (int)((mono.Length / 15114240.0f) * 50)/skip;
+                skip = (int)((mono.Length / 15114240.0f) * 10)/skip;
                 if (skip < 100)
                     skip = 100;
-                for (int i = 0; i < input.Length / 4; i += skip)
+                for (int i = 0; i < input.Length / 2; i += skip)
                 {
                     double mag = Math.Sqrt(input[i].x * input[i].x + input[i].y * input[i].y);
                     double phase = Math.Atan2(input[i].y, input[i].x);
 
                     FFTPointsMag.Add(new DataPoint(i, mag));
-                    if(i < mono.Length / 128)
+                    if(i < mono.Length / 4)
                         FFTPointsPhase.Add(new DataPoint(i, phase));
                 }
 
