@@ -85,6 +85,10 @@
     <Compile Include="AlgLib\solvers.cs" />
     <Compile Include="AlgLib\specialfunctions.cs" />
     <Compile Include="AlgLib\statistics.cs" />
+    <Page Include="CorrelationWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -92,6 +96,10 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Correlation.cs" />
+    <Compile Include="CorrelationWindow.xaml.cs">
+      <DependentUpon>CorrelationWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Extensions\BitmapContext.cs" />
     <Compile Include="Extensions\BitmapFactory.cs" />

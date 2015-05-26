@@ -1,0 +1,11 @@
+﻿<Controls:MetroWindow x:Class="Dejitaru_signaru.CorrelationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        Title="CorrelationWindow" Height="268" Width="576">
+    <Grid>
+        <oxy:PlotView x:Name="correlationPlot" Background="#FFF" />
+        <Label x:Name="lblLoading" Content="Loading" Margin="242,105,241,105" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+    </Grid>
+</Controls:MetroWindow>

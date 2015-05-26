@@ -33,6 +33,7 @@ namespace Dejitaru_signaru
     public partial class MainWindow : MetroWindow
     {
         const int SKIP = 10;
+        const double LOG = 10;
 
         //Image
         WriteableBitmap grayscale;
@@ -58,6 +59,9 @@ namespace Dejitaru_signaru
         OxyPlot.Axes.LinearAxis y_axes;
 
         float[] mono;
+        bool translate_fourier = false;
+
+        string mainTrack = "";
         
         public MainWindow()
         {
@@ -89,7 +93,6 @@ namespace Dejitaru_signaru
             FFTMagLSeries = new LineSeries();
             FFTMagLSeries.ItemsSource = FFTPointsMag;
             FFTMagLSeries.Color = OxyColors.Red;
-
 
             FFTPhaseLSeries = new LineSeries();
             FFTPhaseLSeries.ItemsSource = FFTPointsPhase;
@@ -131,7 +134,9 @@ namespace Dejitaru_signaru
                 return;
             
             float perc = (float)(player.Position.TotalSeconds / player.NaturalDuration.TimeSpan.TotalSeconds);
-            slider_songSeek.Value = perc * 100;
+
+            if(!slider_songSeek.IsMouseCaptured && !slider_songSeek.IsMouseOver)
+                slider_songSeek.Value = perc * 100;
 
             int frame_index = (int)(mono.Length * perc);
             if (frame_index >= mono.Length - 1)
@@ -148,8 +153,8 @@ namespace Dejitaru_signaru
 
             double panStep = x_axes.Transform(-0.1 + x_axes.Offset);
             if(time > 5)
-                x_axes.Pan(panStep); 
-
+                x_axes.Pan(panStep);
+           
     
             plot.InvalidatePlot(true);
 
@@ -274,35 +279,62 @@ namespace Dejitaru_signaru
                 }
             }
 
-            double c_mag = 255 / Math.Log10(1 + max_mag);
-            double c_phase = 255 / Math.Log10(1 + max_phase);
+            double c_mag = 255 / Math.Log(1 + max_mag/20.0, LOG);
+            double c_phase = 255 / Math.Log(1 + max_phase, LOG);
 
 
             //Plot FFT
-            WriteableBitmap fourier_mag = new WriteableBitmap(width + 1, height + 1, grayscale.DpiX, grayscale.DpiY, PixelFormats.Bgra32, BitmapPalettes.Halftone256Transparent);
-            WriteableBitmap fourier_phase = new WriteableBitmap(width + 1, height + 1, grayscale.DpiX, grayscale.DpiY, PixelFormats.Bgra32, BitmapPalettes.Halftone256Transparent);
+            WriteableBitmap fourier_mag = new WriteableBitmap(width + 1, height + 1, grayscale.DpiX, grayscale.DpiY, PixelFormats.Bgr24, BitmapPalettes.Halftone256Transparent);
+            WriteableBitmap fourier_phase = new WriteableBitmap(width + 1, height + 1, grayscale.DpiX, grayscale.DpiY, PixelFormats.Bgr24, BitmapPalettes.Halftone256Transparent);
             fourier_mag.Clear();
             fourier_phase.Clear();
-            unsafe
+            for (int x = 0; x < width; x++)
             {
-                for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
                 {
-                    for (int y = 0; y < height; y++)
+                    int i = x * height + y;
+                    float r = perc * ((width > height) ? width : height);
+                    if ((x - width / 2) * (x - width / 2) + (y - height / 2) * (y - height / 2) > r * r)
                     {
-                        int i = x * height + y;
-                        float r = perc * ((width > height) ? width : height);
-                        if ((x - width / 2) * (x - width / 2) + (y - height / 2) * (y - height / 2) > r * r)
-                        {
-                            input[i].x = 0;
-                            input[i].y = 0;
-                        }
+                        input[i].x = 0;
+                        input[i].y = 0;
+                    }
+                }
+            }
 
 
-                        double mag = Math.Sqrt(input[i].x * input[i].x + input[i].y * input[i].y);
-                        double phase = Math.Atan2(input[i].y, input[i].x);
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    int i = x * height + y;
 
-                        byte dyn_pix_mag = (byte)(c_mag * Math.Log10(1 + mag));
-                        byte dyn_pix_phase = (byte)(c_phase * Math.Log10(1 + phase));
+                    int x_mod = (x + width / 2) % width;
+                    int y_mod = (y + height / 2) % height;
+                    if (!translate_fourier)
+                    {
+                        x_mod = x;
+                        y_mod = y;
+                    }
+
+                    i = x_mod * height + y_mod;
+
+
+
+                    double input_x = input[i].x;
+                    double input_y = input[i].y;
+
+                    double mag = Math.Sqrt(input_x * input_x + input_y * input_y);
+                    double phase = Math.Atan2(input_y, input_x);
+
+
+                    byte dyn_pix_mag = (byte)(c_mag * Math.Log(1 + mag, LOG));
+                    byte dyn_pix_phase = (byte)(c_phase * Math.Log(1 + phase, LOG));
+
+
+                    unsafe
+                    {
+                        //dyn_pix_mag = (byte)(mag / (float)max_mag*2000.0f);
 
 
                         IntPtr pBackBuffer = fourier_mag.BackBuffer;
@@ -310,20 +342,20 @@ namespace Dejitaru_signaru
                         byte* pBuff = (byte*)pBackBuffer.ToPointer();
 
                         //BGRA
-                        pBuff[4 * x + (y * fourier_mag.BackBufferStride)] = dyn_pix_mag;
-                        pBuff[4 * x + (y * fourier_mag.BackBufferStride) + 1] = dyn_pix_mag;
-                        pBuff[4 * x + (y * fourier_mag.BackBufferStride) + 2] = dyn_pix_mag;
-                        pBuff[4 * x + (y * fourier_mag.BackBufferStride) + 3] = 255;
+                        pBuff[3 * x + (y * fourier_mag.BackBufferStride)] = dyn_pix_mag;
+                        pBuff[3 * x + (y * fourier_mag.BackBufferStride) + 1] = dyn_pix_mag;
+                        pBuff[3 * x + (y * fourier_mag.BackBufferStride) + 2] = dyn_pix_mag;
+                        //pBuff[4 * x + (y * fourier_mag.BackBufferStride) + 3] = 255;
 
                         pBackBuffer = fourier_phase.BackBuffer;
 
                         pBuff = (byte*)pBackBuffer.ToPointer();
 
                         //BGRA
-                        pBuff[4 * x + (y * fourier_phase.BackBufferStride)] = dyn_pix_phase;
-                        pBuff[4 * x + (y * fourier_phase.BackBufferStride) + 1] = dyn_pix_phase;
-                        pBuff[4 * x + (y * fourier_phase.BackBufferStride) + 2] = dyn_pix_phase;
-                        pBuff[4 * x + (y * fourier_phase.BackBufferStride) + 3] = 255;
+                        pBuff[3 * x + (y * fourier_phase.BackBufferStride)] = dyn_pix_phase;
+                        pBuff[3 * x + (y * fourier_phase.BackBufferStride) + 1] = dyn_pix_phase;
+                        pBuff[3 * x + (y * fourier_phase.BackBufferStride) + 2] = dyn_pix_phase;
+                        //pBuff[4 * x + (y * fourier_phase.BackBufferStride) + 3] = 255;
                     }
 
 
@@ -455,6 +487,7 @@ namespace Dejitaru_signaru
                 songNotify.Start();
 
                 ReadWaveFile(op.FileName);
+                mainTrack = op.FileName;
 
                 status_label.Content = "Done";
 
@@ -487,6 +520,7 @@ namespace Dejitaru_signaru
                 double[] corr;
                 alglib.corrr1d(signal2, signal2.Length / (SKIP*SKIP), signal2, signal2.Length/(SKIP*SKIP), out corr);
                 double norm = corr[0];
+                double average = 0;
                 for (int i = 0; i < splits; i++)
                 {
                     double[] signal1 = new double[(int)Math.Ceiling((float)width/SKIP)];
@@ -503,6 +537,7 @@ namespace Dejitaru_signaru
                     //alglib.corrr1d(signal1, width / SKIP, signal2, signal2.Length / SKIP, out corr);
                     for (int k = 0; k < corr.Length; k++)
                     {
+                        average += corr[k] / corr.Length;
                         if (Math.Abs(corr[k]) > max_sim)
                         {
                             max_sim = Math.Abs(corr[k]);
@@ -516,11 +551,18 @@ namespace Dejitaru_signaru
                // max_sim /= signal2.Length / waveInfo.SampleRate;
                // max_sim *= time;
                // max_sim = max_sim * max_sim;
-                float sim = (float)(max_sim / norm * 1000);
+                float sim = (float)(Math.Pow(Math.Abs(max_sim - average)/norm * 1000, 1));
 
-                string song_name = System.IO.Path.GetFileNameWithoutExtension(audio_files[j]);
+                string song_name = audio_files[j];
                 songs.Add(new Tuple<string, double, int>(song_name, sim, max_index));
-                status_label.Dispatcher.Invoke(() => { status_label.Content = song_name + " - " + sim; });
+                try
+                {
+                    status_label.Dispatcher.Invoke(() => { status_label.Content = song_name + " - " + sim; });
+                }
+                catch
+                {
+
+                }
             }
             //);
             return songs;
@@ -547,10 +589,11 @@ namespace Dejitaru_signaru
                                 var item = new ListBoxItem();
                                 float time = mono.Length / sfInfo.SampleRate;
 
+                                string song_name = System.IO.Path.GetFileNameWithoutExtension(songs[i].Item1);
 
                                 Label label1 = new Label();
                                 label1.Width = 100;
-                                label1.Content = songs[i].Item1;
+                                label1.Content = song_name;
                                 Label label2 = new Label();
                                 label2.Width = 50;
                                 label2.Content = (int)(songs[i].Item3 / (float)mono.Length * time);
@@ -568,6 +611,8 @@ namespace Dejitaru_signaru
                                 panel.Children.Add(label2);
                                 panel.Children.Add(label3);
                                 panel.Children.Add(bar);
+                                
+                                
 
                                 if (songs[i].Item2 > 800)
                                 {
@@ -582,6 +627,7 @@ namespace Dejitaru_signaru
                                 //item.Content = songs[i].Item1 + " - " + songs[i].Item2 + " - " + (songs[i].Item3 / (float)mono.Length * time);
 
                                 item.Content = panel;
+                                item.Tag = songs[i].Item1;
                                 
                                 listBoxStatus.Items.Add(item);
                             });
@@ -597,7 +643,7 @@ namespace Dejitaru_signaru
             {
                 int size = width * height;
 
-                int skip = 10 * SKIP/2;
+                int skip = 20 * SKIP/2;
                 alglib.complex[] input = new alglib.complex[mono.Length / skip + 1];
 
                 for (int i = 0; i < mono.Length; i += skip)
@@ -703,8 +749,81 @@ namespace Dejitaru_signaru
         private void Slider_DragCompleted_1(object sender, DragCompletedEventArgs e)
         {
             Slider s = sender as Slider;
+
+            double newTime = s.Value * player.NaturalDuration.TimeSpan.TotalSeconds / 100.0f;
+            double deltaTime = newTime - player.Position.TotalSeconds;
+
+            
+        
+            x_axes.Minimum = newTime;
+            songModel.Axes[0].Minimum = newTime;
+
+            double panStep = x_axes.Transform(-deltaTime + x_axes.Offset);
+            x_axes.Pan(panStep);
+            plot.InvalidatePlot(true);
+            //x_axes.Minimum = newTime;
+            player.Position = new TimeSpan(0, 0, (int)newTime);
             // Your code
-            MessageBox.Show(s.Value.ToString());
+            //MessageBox.Show(s.Value.ToString());
+        }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            translate_fourier = (bool)(sender as CheckBox).IsChecked;
+            Slider_ValueChanged(null, null);
+        }
+
+        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            CheckBox_Checked(sender, e);
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            status_label.Content = "Opening file";
+            SaveFileDialog op = new SaveFileDialog();
+            op.Title = "Save filtered picture";
+            op.Filter = "JPEG | *.jpg";
+
+            var encoder = new JpegBitmapEncoder(); // Or PngBitmapEncoder, or whichever encoder you want
+            encoder.Frames.Add(BitmapFrame.Create(img_filtered.Source as WriteableBitmap));
+            if (op.ShowDialog()==true)
+            {
+                using (var stream = op.OpenFile())
+                {
+                    encoder.Save(stream);
+                }
+            }
+            
+            
+          /*  if (op.ShowDialog() == true)
+            {
+                if (op.FileName == null || op.FileName == "")
+                    return;
+                status_label.Content = "Loading file";
+                grayscale = LoadGrayScaleBitmap(op.FileName);
+                img_grayscale.Source = grayscale;
+                img_label.Content = System.IO.Path.GetFileName(op.FileName);
+
+                Slider_ValueChanged(null, null);
+                status_label.Content = "Done";
+
+
+            }*/
+        }
+
+        private void listBoxStatus_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void listBoxStatus_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            string song_name = (listBoxStatus.SelectedItem as ListBoxItem).Tag.ToString();
+            CorrelationWindow window = new CorrelationWindow(mainTrack, song_name);
+            window.Title = "Correlation with " + System.IO.Path.GetFileNameWithoutExtension(song_name);
+            window.ShowDialog();
+
         }
         
     }

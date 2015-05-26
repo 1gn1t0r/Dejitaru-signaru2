@@ -29,28 +29,36 @@
                             </Grid>
                         </TabItem>
                     </TabControl>
-                    <ListBox x:Name="listBoxStatus" Margin="10,0,0,10" Height="112" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="420"/>
+                    <ListBox x:Name="listBoxStatus" Margin="10,0,0,10" Height="112" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="420" SelectionChanged="listBoxStatus_SelectionChanged" MouseDoubleClick="listBoxStatus_MouseDoubleClick"/>
                     <Label Content="Song Similarity:" HorizontalAlignment="Left" Margin="10,0,0,127" VerticalAlignment="Bottom" RenderTransformOrigin="-1.421,0.231" FontSize="20"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Imeji">
                 <Grid Background="#FFF">
-                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="32,64,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
-                        <Image x:Name="img_grayscale" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                    </Grid>
-                    <Grid Background="#FFE5E5E5" Margin="611,34,27,209">
+                    <Grid Background="#FFE5E5E5" Margin="628,10,10,233">
                         <Image x:Name="img_filtered" HorizontalAlignment="Left" VerticalAlignment="Top" />
                     </Grid>
-                    <Label Content="High pass threshold" HorizontalAlignment="Left" Margin="30,618,0,0" VerticalAlignment="Top"/>
-                    <Slider x:Name="slider_thresh" HorizontalAlignment="Left" Margin="150,626,0,0" VerticalAlignment="Top" Width="128" ValueChanged="Slider_ValueChanged" Minimum="25" LargeChange="0.5" TickFrequency="0.5" Maximum="90"/>
-                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="33,344,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
-                        <Image x:Name="img_fourier_mag" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    <Slider x:Name="slider_thresh" HorizontalAlignment="Left" Margin="298,665,0,0" VerticalAlignment="Top" Width="271" ValueChanged="Slider_ValueChanged" Minimum="25" LargeChange="0.5" TickFrequency="0.5" Maximum="90"/>
+
+
+                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="10,64,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Image x:Name="img_grayscale" HorizontalAlignment="Left" VerticalAlignment="Top" />
+
                     </Grid>
-                    <Label x:Name="img_label" Content="Image" HorizontalAlignment="Left" Margin="32,33,0,0" VerticalAlignment="Top"/>
-                    <Button Content="Browse" HorizontalAlignment="Left" Margin="213,33,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
-                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="317,344,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="292,396,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
                         <Image x:Name="img_fourier_phase" HorizontalAlignment="Left" VerticalAlignment="Top" />
                     </Grid>
+                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="10,396,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+                        <Image x:Name="img_fourier_mag" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </Grid>
+                    <Label Content="High pass threshold" HorizontalAlignment="Left" Margin="175,657,0,0" VerticalAlignment="Top"/>
+                    <Label Content="Magnitude" HorizontalAlignment="Left" Margin="10,365,0,0" VerticalAlignment="Top"/>
+
+                    <CheckBox Content="Translate fourier image" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked"/>
+                    <Label x:Name="img_label" Content="Image" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                    <Button Content="Browse" HorizontalAlignment="Left" Margin="10,34,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+                    <Label Content="Phase" HorizontalAlignment="Left" Margin="292,370,0,0" VerticalAlignment="Top"/>
+                    <Button Content="Save" HorizontalAlignment="Right" Margin="0,0,10,203" VerticalAlignment="Bottom" Width="75" Click="Button_Click_3"/>
                 </Grid>
             </TabItem>
 
