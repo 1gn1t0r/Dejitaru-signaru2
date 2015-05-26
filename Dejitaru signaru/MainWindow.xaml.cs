@@ -103,7 +103,7 @@ namespace Dejitaru_signaru
             this.plotfftphase.Model.Series.Add(FFTPhaseLSeries);
 
             songNotify = new DispatcherTimer();
-            songNotify.Interval = new TimeSpan(0, 0, 0, 0, 100);
+            songNotify.Interval = new TimeSpan(0, 0, 0, 0, 50);
             songNotify.Tick += songNotify_Tick;
 
             x_axes = new OxyPlot.Axes.LinearAxis()
@@ -128,11 +128,14 @@ namespace Dejitaru_signaru
             
         }
 
+        double prevPos;
+        double curPos;
         void songNotify_Tick(object sender, EventArgs e)
         {
             if (!player.NaturalDuration.HasTimeSpan)
                 return;
             
+            curPos = player.Position.TotalSeconds;
             float perc = (float)(player.Position.TotalSeconds / player.NaturalDuration.TimeSpan.TotalSeconds);
 
             if(!slider_songSeek.IsMouseCaptured && !slider_songSeek.IsMouseOver)
@@ -151,13 +154,15 @@ namespace Dejitaru_signaru
 
             //songModel.Axes[0].IsPanEnabled = false;
 
-            double panStep = x_axes.Transform(-0.1 + x_axes.Offset);
+            double interval = curPos - prevPos;
+            //interval = songNotify.Interval.TotalSeconds;
+            double panStep = x_axes.Transform(-interval + x_axes.Offset);
             if(time > 5)
                 x_axes.Pan(panStep);
            
     
             plot.InvalidatePlot(true);
-
+            prevPos = curPos;
             
         }
 
@@ -510,51 +515,28 @@ namespace Dejitaru_signaru
             //System.Threading.Tasks.Parallel.For(0, audio_files.Length, j =>
             for (int j = 0; j < audio_files.Length; j++)
             {
-                double[] signal2;
-                WaveFormat waveInfo;
-                //ReadWaveFile(audio_files[j], out signal2, out waveInfo);
-                ReadWaveFile(audio_files[j], out signal2, out waveInfo, SKIP);
-
-                double max_sim = 0;
-                int max_index = 0;
+                int skip = 1000;
                 double[] corr;
-                alglib.corrr1d(signal2, signal2.Length / (SKIP*SKIP), signal2, signal2.Length/(SKIP*SKIP), out corr);
-                double norm = corr[0];
+                Correlation.Correlate(mainTrack, audio_files[j], out corr, skip);
+
+                double auto_corr = Correlation.Max_Auto_Correlation_Value(audio_files[j]);
                 double average = 0;
-                for (int i = 0; i < splits; i++)
+                double max_peak = 0;
+                int max_index = 0;
+                for(int i = 0; i < corr.Length; i++)
                 {
-                    double[] signal1 = new double[(int)Math.Ceiling((float)width/SKIP)];
-
-                    for (int k = 0; k < width; k+=SKIP)
+                    average += corr[i] / corr.Length;
+                    if(corr[i] > max_peak)
                     {
-                        signal1[k/SKIP] = mono[i * width + k];
+                        max_peak = corr[i];
+                        max_index = i;
                     }
-
-                    //double[] corr;
-                   
-                    alglib.corrr1dcircular(signal1, signal1.Length, signal2, signal2.Length, out corr);
-                    
-                    //alglib.corrr1d(signal1, width / SKIP, signal2, signal2.Length / SKIP, out corr);
-                    for (int k = 0; k < corr.Length; k++)
-                    {
-                        average += corr[k] / corr.Length;
-                        if (Math.Abs(corr[k]) > max_sim)
-                        {
-                            max_sim = Math.Abs(corr[k]);
-                            max_index = k*SKIP + i * width;
-                        }
-                    }
-
                 }
-                
-               // max_sim /= ((width) / waveInfo.SampleRate);
-               // max_sim /= signal2.Length / waveInfo.SampleRate;
-               // max_sim *= time;
-               // max_sim = max_sim * max_sim;
-                float sim = (float)(Math.Pow(Math.Abs(max_sim - average)/norm * 1000, 1));
+
+                float sim = (float)Math.Pow((max_peak - average)/auto_corr,2)*skip*1000;
 
                 string song_name = audio_files[j];
-                songs.Add(new Tuple<string, double, int>(song_name, sim, max_index));
+                songs.Add(new Tuple<string, double, int>(song_name, sim, max_index * skip));
                 try
                 {
                     status_label.Dispatcher.Invoke(() => { status_label.Content = song_name + " - " + sim; });
@@ -614,10 +596,10 @@ namespace Dejitaru_signaru
                                 
                                 
 
-                                if (songs[i].Item2 > 800)
+                                if (songs[i].Item2 > 100)
                                 {
                                     OxyPlot.Annotations.LineAnnotation annotation = new OxyPlot.Annotations.LineAnnotation();
-                                    annotation.Text = songs[i].Item1;
+                                    annotation.Text = System.IO.Path.GetFileNameWithoutExtension(songs[i].Item1);
                                     annotation.Type = OxyPlot.Annotations.LineAnnotationType.Vertical;
                                     annotation.X = (songs[i].Item3 / (float)mono.Length * time);
                                    

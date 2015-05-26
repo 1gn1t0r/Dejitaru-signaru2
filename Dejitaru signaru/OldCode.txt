@@ -1,0 +1,70 @@
+﻿
+        List<Tuple<string, double, int>> check_similarity(string[] audio_files)
+        {
+            float time = mono.Length / sfInfo.SampleRate;
+            int splits = (int)(time/60)/4; //splits of 4 minute intervals
+            if (splits < 1)
+                splits = 1;
+            splits = 3;
+            int width = mono.Length / splits;
+            List<Tuple<string, double, int>> songs = new List<Tuple<string, double, int>>();
+            //System.Threading.Tasks.Parallel.For(0, audio_files.Length, j =>
+            for (int j = 0; j < audio_files.Length; j++)
+            {
+                double[] signal2;
+                WaveFormat waveInfo;
+                //ReadWaveFile(audio_files[j], out signal2, out waveInfo);
+                ReadWaveFile(audio_files[j], out signal2, out waveInfo, SKIP);
+
+                double max_sim = 0;
+                int max_index = 0;
+                double[] corr;
+                alglib.corrr1d(signal2, signal2.Length / (SKIP*SKIP), signal2, signal2.Length/(SKIP*SKIP), out corr);
+                double norm = corr[0];
+                double average = 0;
+                for (int i = 0; i < splits; i++)
+                {
+                    double[] signal1 = new double[(int)Math.Ceiling((float)width/SKIP)];
+
+                    for (int k = 0; k < width; k+=SKIP)
+                    {
+                        signal1[k/SKIP] = mono[i * width + k];
+                    }
+
+                    //double[] corr;
+                   
+                    alglib.corrr1dcircular(signal1, signal1.Length, signal2, signal2.Length, out corr);
+                    
+                    //alglib.corrr1d(signal1, width / SKIP, signal2, signal2.Length / SKIP, out corr);
+                    for (int k = 0; k < corr.Length; k++)
+                    {
+                        average += corr[k] / corr.Length;
+                        if (Math.Abs(corr[k]) > max_sim)
+                        {
+                            max_sim = Math.Abs(corr[k]);
+                            max_index = k*SKIP + i * width;
+                        }
+                    }
+
+                }
+                
+               // max_sim /= ((width) / waveInfo.SampleRate);
+               // max_sim /= signal2.Length / waveInfo.SampleRate;
+               // max_sim *= time;
+               // max_sim = max_sim * max_sim;
+                float sim = (float)(Math.Pow(Math.Abs(max_sim - average)/norm * 1000, 1));
+
+                string song_name = audio_files[j];
+                songs.Add(new Tuple<string, double, int>(song_name, sim, max_index));
+                try
+                {
+                    status_label.Dispatcher.Invoke(() => { status_label.Content = song_name + " - " + sim; });
+                }
+                catch
+                {
+
+                }
+            }
+            //);
+            return songs;
+        }
