@@ -45,13 +45,13 @@
                         <Image x:Name="img_grayscale" HorizontalAlignment="Left" VerticalAlignment="Top" />
 
                     </Grid>
-                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="292,396,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
-                        <Image x:Name="img_fourier_phase" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="292,396,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" MouseLeftButtonUp="Grid_MouseLeftButtonUp">
+                        <Image x:Name="img_fourier_phase" HorizontalAlignment="Left" VerticalAlignment="Top" MouseLeftButtonUp="img_fourier_phase_MouseLeftButtonUp" />
                     </Grid>
                     <Grid Background="#FFE5E5E5" Width="256" Height="256" Margin="10,396,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
-                        <Image x:Name="img_fourier_mag" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                        <Image x:Name="img_fourier_mag" HorizontalAlignment="Left" VerticalAlignment="Top" MouseLeftButtonUp="img_fourier_mag_MouseLeftButtonUp" />
                     </Grid>
-                    <Label Content="High pass threshold" HorizontalAlignment="Left" Margin="175,657,0,0" VerticalAlignment="Top"/>
+                    <Label Content="High pass cutoff" HorizontalAlignment="Left" Margin="182,665,0,0" VerticalAlignment="Top"/>
                     <Label Content="Magnitude" HorizontalAlignment="Left" Margin="10,365,0,0" VerticalAlignment="Top"/>
 
                     <CheckBox Content="Translate fourier image" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked"/>
@@ -59,6 +59,8 @@
                     <Button Content="Browse" HorizontalAlignment="Left" Margin="10,34,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
                     <Label Content="Phase" HorizontalAlignment="Left" Margin="292,370,0,0" VerticalAlignment="Top"/>
                     <Button Content="Save" HorizontalAlignment="Right" Margin="0,0,10,203" VerticalAlignment="Bottom" Width="75" Click="Button_Click_3"/>
+                    <Slider HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="317" ValueChanged="Slider_ValueChanged_1" Maximum="255" SmallChange="1"/>
+                    <CheckBox Content="Thresholding" HorizontalAlignment="Left" Margin="628,665,0,0" VerticalAlignment="Top" Width="128" Checked="CheckBox_Checked_1" Unchecked="CheckBox_Unchecked_1"/>
                 </Grid>
             </TabItem>
 

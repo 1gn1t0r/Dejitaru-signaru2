@@ -46,7 +46,9 @@ namespace Dejitaru_signaru
         IList<DataPoint> FFTPointsMag;
         public PlotModel fftModelPhase { get; private set; }
         IList<DataPoint> FFTPointsPhase;
-        
+
+
+        string[] files;
 
         LineSeries SongLSeries;
         LineSeries FFTMagLSeries;
@@ -60,6 +62,8 @@ namespace Dejitaru_signaru
 
         float[] mono;
         bool translate_fourier = false;
+        bool threshold = false;
+        byte threshold_value = 0;
 
         string mainTrack = "";
         
@@ -121,7 +125,9 @@ namespace Dejitaru_signaru
                 AbsoluteMaximum = 2,
                 AbsoluteMinimum = -2,
                 MinorStep = 0.1,
+                
             };
+            
             songModel.Axes.Add(x_axes);
             songModel.Axes.Add(y_axes);
         
@@ -388,7 +394,12 @@ namespace Dejitaru_signaru
                         byte* pBuff = (byte*)pBackBuffer.ToPointer();
 
                         byte val = (byte)Math.Abs(input[i].x);
-
+                        if (threshold)
+                        {
+                            if (val < threshold_value)
+                                val = 0;
+                            else val =  (val*2 > 255) ? (byte)255 : (byte)(val*2);
+                        }
                         //BGRA
                         pBuff[4 * x + (y * filtered.BackBufferStride)] = val;
                         pBuff[4 * x + (y * filtered.BackBufferStride) + 1] = val;
@@ -444,7 +455,7 @@ namespace Dejitaru_signaru
         {
             try
             {
-                float slider_val = (float)slider_thresh.Value / 100.0f;
+                //float slider_val = (float)slider_thresh.Value / 100.0f;
                 status_label.Content = "Calculating FFT";
                 CalculateImgFFT((float)slider_thresh.Value / 100);
                 status_label.Content = "Done";
@@ -807,6 +818,66 @@ namespace Dejitaru_signaru
             window.ShowDialog();
 
         }
+
+        private void CheckBox_Checked_1(object sender, RoutedEventArgs e)
+        {
+            threshold = (bool)(sender as CheckBox).IsChecked;
+            Slider_ValueChanged(sender, null);
+        }
+
+        private void CheckBox_Unchecked_1(object sender, RoutedEventArgs e)
+        {
+            CheckBox_Checked_1(sender, e);
+        }
+
+        private void Slider_ValueChanged_1(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            threshold_value = (byte)(sender as Slider).Value;
+            Slider_ValueChanged(sender, e);
+        }
+
+        private void img_fourier_mag_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            status_label.Content = "Opening file";
+            SaveFileDialog op = new SaveFileDialog();
+            op.Title = "Save filtered picture";
+            op.Filter = "JPEG | *.jpg";
+
+            var encoder = new JpegBitmapEncoder(); // Or PngBitmapEncoder, or whichever encoder you want
+            encoder.Frames.Add(BitmapFrame.Create(img_fourier_mag.Source as WriteableBitmap));
+            if (op.ShowDialog() == true)
+            {
+                using (var stream = op.OpenFile())
+                {
+                    encoder.Save(stream);
+                }
+            }
+        }
+
+        private void Grid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void img_fourier_phase_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            status_label.Content = "Opening file";
+            SaveFileDialog op = new SaveFileDialog();
+            op.Title = "Save filtered picture";
+            op.Filter = "JPEG | *.jpg";
+
+            var encoder = new JpegBitmapEncoder(); // Or PngBitmapEncoder, or whichever encoder you want
+            encoder.Frames.Add(BitmapFrame.Create(img_fourier_phase.Source as WriteableBitmap));
+            if (op.ShowDialog() == true)
+            {
+                using (var stream = op.OpenFile())
+                {
+                    encoder.Save(stream);
+                }
+            }
+        }
+
+
         
     }
 }

@@ -75,11 +75,8 @@ namespace Dejitaru_signaru
         {
             double[] arr;
             Correlate(file, file, out arr);
-            double max = 0;
-            for (int i = 0; i < arr.Length / 2; i++)
-                if (arr[i] > max)
-                    max = arr[i];
-            return max;
+
+            return arr[0] ;
         }
 
         /// <summary>
